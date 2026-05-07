@@ -1,148 +1,130 @@
-# three-tier-eks-iac
+# Three-Tier Web Application with Kubernetes 🚀
 
-# Prerequisite 
+A production-ready three-tier web application (To-Do App) containerized with Docker and deployed on AWS EKS using Kubernetes.
 
-**Install Kubectl**
-https://kubernetes.io/docs/tasks/tools/
+---
 
-
-**Install Helm**
-https://helm.sh/docs/intro/install/
+## 🏗️ Architecture
 
 ```
-helm repo update
+Users → ALB (Load Balancer)
+         ├── /        → Frontend  (React + Nginx)
+         └── /api     → Backend   (Node.js REST API)
+                               └── MongoDB (Database)
 ```
 
-**Install/update latest AWS CLI:** (make sure install v2 only)
-https://aws.amazon.com/cli/
+---
 
-#update the Kubernetes context
-aws eks update-kubeconfig --name my-eks-cluster --region us-west-2
+## 🛠️ Tech Stack
 
-# verify access:
-```
-kubectl auth can-i "*" "*"
-kubectl get nodes
-```
+| Layer | Technology |
+|---|---|
+| Frontend | React.js, Nginx |
+| Backend | Node.js, Express |
+| Database | MongoDB |
+| Containerization | Docker |
+| Container Registry | AWS ECR (Public) |
+| Orchestration | Kubernetes |
+| Cloud | AWS EKS |
+| Load Balancer | AWS ALB (Application Load Balancer) |
+| Infrastructure | Terraform |
 
-# Verify autoscaler running:
-```
-kubectl get pods -n kube-system
-```
+---
 
-# Check Autoscaler logs
-```
-kubectl logs -f \
-  -n kube-system \
-  -l app=cluster-autoscaler
-```
-
-# Check load balancer logs
-```
-kubectl logs -f -n kube-system \
-  -l app.kubernetes.io/name=aws-load-balancer-controller
-```
-
-<!-- aws eks update-kubeconfig \
-  --name my-eks \
-  --region us-west-2 \
-  --profile eks-admin -->
-
-
-# Buid Docker image :
-**For Mac:**
+## 📁 Project Structure
 
 ```
-export DOCKER_CLI_EXPERIMENTAL=enabled
-aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/w8u5e4v2
+three-tier-eks-iac/
+├── app/
+│   ├── frontend/          # React app
+│   │   ├── Dockerfile
+│   │   └── src/
+│   └── backend/           # Node.js API
+│       └── Dockerfile
+├── k8s/                   # Kubernetes manifests
+│   ├── frontend-deployment.yaml
+│   ├── backend-deployment.yaml
+│   ├── mongodb-deployment.yaml
+│   └── ingress.yaml
+└── terraform/             # Infrastructure as Code
 ```
 
-Buid Front End :
+---
 
-```
-docker buildx build --platform linux/amd64 -t workshop-frontend:v1 . 
-docker tag workshop-frontend:v1 public.ecr.aws/w8u5e4v2/workshop-frontend:v1
-docker push public.ecr.aws/w8u5e4v2/workshop-frontend:v1
-```
+## 🚀 What I Built
 
+- ✅ Containerized React frontend using Docker with multi-stage builds (Nginx)
+- ✅ Containerized Node.js backend API with Docker
+- ✅ Pushed Docker images to AWS ECR Public Registry
+- ✅ Deployed all three tiers to AWS EKS cluster
+- ✅ Configured Kubernetes Deployments, Services, and Ingress
+- ✅ Set up AWS ALB Ingress Controller for traffic routing
+- ✅ Provisioned infrastructure using Terraform (IaC)
 
-Buid Back End :
+---
 
-```
-docker buildx build --platform linux/amd64 -t workshop-backend:v1 . 
-docker tag workshop-backend:v1 public.ecr.aws/w8u5e4v2/workshop-backend:v1
-docker push public.ecr.aws/w8u5e4v2/workshop-backend:v1
-```
+## 🔧 How to Deploy
 
-**For Linux/Windows:**
+### Prerequisites
+- AWS CLI configured
+- kubectl installed
+- Docker installed
+- Terraform installed
 
-Buid Front End :
+### Steps
 
-```
-docker build -t workshop-frontend:v1 . 
-docker tag workshop-frontend:v1 public.ecr.aws/w8u5e4v2/workshop-frontend:v1
-docker push public.ecr.aws/w8u5e4v2/workshop-frontend:v1
-```
-
-
-Buid Back End :
-
-```
-docker build -t workshop-backend:v1 . 
-docker tag workshop-backend:v1 public.ecr.aws/w8u5e4v2/workshop-backend:v1
-docker push public.ecr.aws/w8u5e4v2/workshop-backend:v1
+**1. Clone the repository**
+```bash
+git clone https://github.com/siddharthsathya83-bot/Three-tier-webapp-with-kubernetes-.git
+cd Three-tier-webapp-with-kubernetes-
 ```
 
+**2. Build and push Docker images**
+```bash
+# Frontend
+docker build -t workshop-frontend:v1 ./app/frontend
+docker tag workshop-frontend:v1 public.ecr.aws/<your-alias>/workshop-frontend:v1
+docker push public.ecr.aws/<your-alias>/workshop-frontend:v1
 
-
-**Create Namespace**
-```
-kubectl create ns workshop
-
-kubectl config set-context --current --namespace workshop
-```
-
-# MongoDB Database Setup
-
-**To create MongoDB Resources**
-```
-cd k8s_manifests/mongo_v1
-kubectl apply -f secrets.yaml
-kubectl apply -f deploy.yaml
-kubectl apply -f service.yaml
+# Backend
+docker build -t workshop-backend:v1 ./app/backend
+docker tag workshop-backend:v1 public.ecr.aws/<your-alias>/workshop-backend:v1
+docker push public.ecr.aws/<your-alias>/workshop-backend:v1
 ```
 
-# Backend API Setup
-
-Create NodeJs API deployment by running the following command:
-```
-kubectl apply -f backend-deployment.yaml
-kubectl apply -f backend-service.yaml
-``
-
-
-**Frontend setup**
-
-Create the Frontend  resource. In the terminal run the following command:
-```
-kubectl apply -f frontend-deployment.yaml
-kubectl apply -f frontend-service.yaml
+**3. Apply Kubernetes manifests**
+```bash
+kubectl apply -f k8s/
+kubectl get pods -n workshop
 ```
 
-Finally create the final load balancer to allow internet traffic:
+**4. Get the application URL**
+```bash
+kubectl get ingress -n workshop
 ```
-kubectl apply -f full_stack_lb.yaml
-```
 
+---
 
-# Any issue with the pods ? check logs:
-kubectl logs -f POD_ID -f
+## 📸 Application
 
+A full-stack To-Do application where users can:
+- ➕ Add tasks
+- ✅ Mark tasks as complete
+- 🗑️ Delete tasks
 
-# Grafana setup 
-Username: admin
-Password: prom-operator
+---
 
-Import Dashboard ID: 1860
+## 📚 Key Learnings
 
-Exlore more at: https://grafana.com/grafana/dashboards/
+- Containerizing multi-tier applications with Docker
+- Managing container images with AWS ECR
+- Deploying and managing workloads on Kubernetes/EKS
+- Configuring Kubernetes Ingress with AWS ALB
+- Infrastructure as Code with Terraform
+- Debugging real-world Kubernetes issues (ImagePullBackOff, CrashLoopBackOff, 502 errors)
+
+---
+
+## 👤 Author
+
+**Siddharth** — [GitHub](https://github.com/siddharthsathya83-bot)
